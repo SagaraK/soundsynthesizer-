@@ -6,6 +6,7 @@ let circle4;
 let loopBeat;
 let bassSynth, cymbalSynth;
 let osc;
+var phaser, synth;
 let timeValue;
 let width;
 let height;
@@ -18,6 +19,7 @@ function setup() {
   width = 400;
   height = 400;
   counter = 0;
+  fill(255);
   circle1 = new circleSlider(50, 50, 75);
   circle2 = new circleSlider(150, 150, 75);
   circle3 = new circleSlider(250, 250, 75);
@@ -26,8 +28,15 @@ function setup() {
   shapes.push(circle2);
   shapes.push(circle3);
   shapes.push(circle4);
-  osc = new Tone.Oscillator(shapes[0].getX(), "sine").toMaster().start();
-  osc.volume.value = -10;
+  phaser = new Tone.Phaser({
+    "frequency" : 15,
+    "octaves" : 5,
+    "baseFrequency" : 1000
+  }).toMaster();
+  synth = new Tone.FMSynth().connect(phaser);
+  synth.volume.value = -20;
+  osc = new Tone.Oscillator(shapes[3].getY(), "sine").toMaster().start();
+  osc.volume.value = shapes[3].getY()/100-20; //controls oscillator volume
   bassSynth = new Tone.MembraneSynth().toMaster();
   cymbalSynth = new Tone.MetalSynth({
     "frequency": shapes[0].getX(),
@@ -41,8 +50,8 @@ function setup() {
     "resonance": 4000,
     "octaves": 1.5
   }).toMaster();
-  cymbalSynth.volume.value = -10;
-  bassSynth.volume.value = -10;
+  cymbalSynth.volume.value = -100; //controls cymbalSynth volume
+  bassSynth.volume.value = -100; //controls bassSynth voume
   loopBeat = new Tone.Loop(song, '16n');
 
   Tone.Transport.bpm.value = 140;
@@ -52,11 +61,7 @@ function setup() {
 }
 
 function draw() {
-  background(220);
-  shapes[0].show();
-  shapes[1].show();
-  shapes[2].show();
-  shapes[3].show();
+  background(osc.volume.value);
   if (mouseIsPressed) {
     shapes[0].clickedX();
     shapes[1].clickedY();
@@ -65,16 +70,47 @@ function draw() {
   }
   circle(width / 2, height / 2, timeValue);
   if(counter == 2 || counter == 10 || counter == 6 || counter == 14){
-    circle(75,75,75);
+    fill(255,255,100);
+    circle(350,50,cymbalSynth.volume.value*2);
   }
+  if(shapes[1].getY()>=width/2){
+    fill(20);
+    triangle(width/4, height-shapes[1].getY()+200,0,400,400,400);
+
+  }
+  if(shapes[1].getY()>=width/4){
+    fill(20);
+    triangle(width/2, height-shapes[1].getY()+150,0,400,400,400);
+  }
+  shapes[0].show();
+  shapes[1].show();
+  shapes[2].show();
+  shapes[3].show();
 }
 
 function song(time) {
+
+  synth.triggerAttackRelease(shapes[1].getY(),"2n");
   if (counter % 4 === 0) {
     bassSynth.triggerAttackRelease('c2', '8n', time, 1);
   }
   if (counter % 8 === 0) {
     cymbalSynth.triggerAttackRelease('16n', time, 0.3);
+  }
+  cymbalSynth.volume.value = shapes[0].getX()/4 - 75;
+  bassSynth.volume.value = shapes[2].getX()/4 - 75;
+
+  if(shapes[3].getY() <= height/1.5){
+    osc.type = 'sawtooth5'
+    osc.frequency = shapes[3].getY();
+    osc.volume.value = shapes[3].getY()/50 - 30;
+
+  }
+  if(shapes[3].getY() <= height/2.5){
+    osc.type = 'square6'
+    osc.frequency = shapes[3].getY();
+    osc.volume.value = shapes[3].getY()/50 - 30;
+
   }
 
   timeValue = time;
@@ -99,6 +135,7 @@ class circleSlider {
     return this.r;
   }
   show() {
+    fill(255);
     strokeWeight(0);
     circle(this.x, this.y, this.r);
   }
@@ -121,5 +158,4 @@ class circleSlider {
     fill(this.r, this.g, this.b);
   }
   hover() {}
-
 }
